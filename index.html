@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tier System</title>
+  <style>
+    body {
+      margin:0;
+      font-family:Arial;
+      background: radial-gradient(circle at top, #111827, #050816);
+      color:white;
+    }
+
+    h1 { margin:20px; }
+
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap:15px;
+      padding:15px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:16px;
+      padding:15px;
+      backdrop-filter: blur(10px);
+    }
+
+    input, select {
+      width:90%;
+      padding:10px;
+      margin:5px;
+      border-radius:10px;
+      border:none;
+      background:#0f172a;
+      color:white;
+    }
+
+    button {
+      padding:10px;
+      margin:5px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:bold;
+    }
+
+    .ht { background:#ef4444; color:white; }
+    .lt { background:#3b82f6; color:white; }
+    .green { background:#22c55e; color:white; }
+
+    ul { list-style:none; padding:0; }
+
+    li {
+      background: rgba(255,255,255,0.07);
+      margin:5px;
+      padding:8px;
+      border-radius:10px;
+    }
+
+    .tag {
+      display:inline-block;
+      padding:3px 8px;
+      margin:2px;
+      border-radius:8px;
+      font-size:11px;
+      background:#334155;
+    }
+
+    .Owner { background:gold; color:black; }
+    .Manager { background:orange; color:black; }
+    .Admin { background:red; }
+    .Tester { background:#3b82f6; }
+  </style>
+</head>
+
+<body>
+
+<h1>🏆 Tier Test System</h1>
+
+<div class="grid">
+
+<!-- REQUEST -->
+<div class="card">
+  <h3>📩 Requests</h3>
+  <input id="reqName" placeholder="Player Name">
+  <button class="green" onclick="submitReq()">Submit</button>
+  <ul id="reqList"></ul>
+</div>
+
+<!-- QUEUE SYSTEM -->
+<div class="card">
+  <h3>🎮 Queue (Tier Test)</h3>
+
+  <input id="qName" placeholder="Player Name">
+
+  <select id="qMode">
+    <option>Sword</option>
+    <option>Cpvp</option>
+    <option>Mace</option>
+    <option>SMP</option>
+    <option>Pot</option>
+    <option>NethPot</option>
+    <option>Lifesteal</option>
+  </select>
+
+  <button class="green" onclick="joinQueue()">Join Queue</button>
+
+  <ul id="queueList"></ul>
+</div>
+
+<!-- PANEL -->
+<div class="card">
+  <h3>⚔ Tester Panel</h3>
+
+  <input id="pName" placeholder="Player Name">
+  <input id="pElo" placeholder="Elo">
+
+  <select id="role">
+    <option>Tester</option>
+    <option>Admin</option>
+    <option>Manager</option>
+    <option>Owner</option>
+  </select>
+
+  <select id="mode">
+    <option>Sword</option>
+    <option>Cpvp</option>
+    <option>Mace</option>
+    <option>SMP</option>
+    <option>Pot</option>
+    <option>NethPot</option>
+    <option>Lifesteal</option>
+  </select>
+
+  <button class="ht" onclick="addPlayer('HT')">HT</button>
+  <button class="lt" onclick="addPlayer('LT')">LT</button>
+</div>
+
+<!-- ROLE MANAGER -->
+<div class="card">
+  <h3>🛠 Role Manager</h3>
+
+  <input id="targetName" placeholder="Player Name">
+
+  <select id="newRole">
+    <option>Tester</option>
+    <option>Admin</option>
+    <option>Manager</option>
+    <option>Owner</option>
+  </select>
+
+  <button class="green" onclick="setRole()">Set Role</button>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="card">
+  <h3>📊 Leaderboard</h3>
+  <ul id="board"></ul>
+</div>
+
+</div>
+
+<script>
+let requests = JSON.parse(localStorage.getItem("requests")) || [];
+let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+let queue = JSON.parse(localStorage.getItem("queue")) || [];
+
+let myRole = "Owner";
+
+function save(){
+  localStorage.setItem("requests", JSON.stringify(requests));
+  localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+  localStorage.setItem("queue", JSON.stringify(queue));
+}
+
+/* REQUEST */
+function submitReq(){
+  let name = document.getElementById("reqName").value;
+  if(!name) return alert("Enter name");
+  requests.push(name);
+  save();
+  renderReq();
+}
+
+function renderReq(){
+  let list = document.getElementById("reqList");
+  list.innerHTML = "";
+
+  requests.forEach((n,i)=>{
+    let li = document.createElement("li");
+    li.innerHTML = `${n} <button class="green" onclick="accept(${i})">Accept</button>`;
+    list.appendChild(li);
+  });
+}
+
+function accept(i){
+  document.getElementById("pName").value = requests[i];
+  requests.splice(i,1);
+  save();
+  renderReq();
+}
+
+/* QUEUE */
+function joinQueue(){
+  let name = document.getElementById("qName").value;
+  let mode = document.getElementById("qMode").value;
+
+  if(!name) return alert("Enter name");
+
+  queue.push({name,mode});
+  save();
+  renderQueue();
+}
+
+function renderQueue(){
+  let list = document.getElementById("queueList");
+  list.innerHTML = "";
+
+  queue.forEach((p,i)=>{
+    let li = document.createElement("li");
+    li.innerHTML = `
+      <b onclick="loadFromQueue(${i})" style="cursor:pointer">${p.name}</b>
+      <span class="tag">${p.mode}</span>
+      <button class="ht" onclick="removeQueue(${i})">Remove</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function loadFromQueue(i){
+  document.getElementById("pName").value = queue[i].name;
+  document.getElementById("mode").value = queue[i].mode;
+}
+
+function removeQueue(i){
+  queue.splice(i,1);
+  save();
+  renderQueue();
+}
+
+/* ADD PLAYER */
+function addPlayer(tier){
+  let name = document.getElementById("pName").value;
+  let elo = document.getElementById("pElo").value;
+  let role = document.getElementById("role").value;
+  let mode = document.getElementById("mode").value;
+
+  if(!name || !elo) return alert("Fill all");
+
+  leaderboard.push({name,tier,elo,role,mode});
+  save();
+  renderBoard();
+}
+
+/* ROLE */
+function setRole(){
+  if(myRole !== "Owner" && myRole !== "Manager"){
+    return alert("No permission!");
+  }
+
+  let name = document.getElementById("targetName").value;
+  let newRole = document.getElementById("newRole").value;
+
+  let p = leaderboard.find(x=>x.name===name);
+  if(!p) return alert("Player not found");
+
+  p.role = newRole;
+  save();
+  renderBoard();
+}
+
+/* BOARD */
+function renderBoard(){
+  let list = document.getElementById("board");
+  list.innerHTML = "";
+
+  leaderboard
+    .sort((a,b)=>b.elo-a.elo)
+    .forEach(p=>{
+      let li = document.createElement("li");
+      li.innerHTML = `
+        <b>${p.name}</b>
+        <span class="tag">${p.tier}</span>
+        <span class="tag">${p.role}</span>
+        <span class="tag">${p.mode}</span>
+        <span class="tag">Elo ${p.elo}</span>
+      `;
+      list.appendChild(li);
+    });
+}
+
+renderReq();
+renderQueue();
+renderBoard();
+</script>
+
+</body>
+  </html>
